@@ -4,6 +4,37 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses semantic versioning where practical.
 
+## v0.4.0
+
+### Added
+
+- Added `multi-actions` support to `custom:custom-js-badge`.
+- Added support for running multiple actions sequentially from `tap_action`, `hold_action` or `double_tap_action`.
+- Added support for delay steps in multi-actions.
+- Added support for service calls through:
+  - `perform-action`
+  - `call-service`
+  - `call_service`
+- Added support for `sequence` as an alias for `actions` in multi-actions.
+- Added a visual editor for `custom:custom-template-badge`.
+- Added `custom-template-badge-editor.js` as a separate editor module.
+- Added import of the template badge editor from `custom-template-badge.js`.
+
+### Changed
+
+- Split the template badge editor into its own file for a cleaner file structure.
+- Kept `custom-badge.js` as the shared HACS entrypoint.
+- Kept `custom-js-badge.js` focused on JavaScript-template badge functionality.
+- Kept `custom-template-badge.js` focused on Home Assistant-template badge functionality.
+
+### Notes
+
+- `multi-actions` supports both `action: multi-actions` and `action: multi-action`.
+- `wait_completion` is only meaningful for service calls handled through `hass.callService`.
+- Frontend actions such as `navigate`, `more-info`, `url` and similar Home Assistant actions are dispatched through Home Assistant's normal action system and cannot be awaited.
+- The visual editor for `custom:custom-template-badge` covers common fields such as entity, name, label, icon, colors, layout and error handling.
+- Advanced action configuration can still be edited in YAML.
+
 ## v0.3.3
 
 ### Changed
