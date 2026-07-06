@@ -1,6 +1,6 @@
 const CUSTOM_TEMPLATE_BADGE_TYPE = "custom-template-badge";
 const CUSTOM_TEMPLATE_BADGE_NAME = "Custom Template Badge";
-const CUSTOM_TEMPLATE_BADGE_VERSION = "0.3.0";
+const CUSTOM_TEMPLATE_BADGE_VERSION = "0.3.1";
 
 const TEMPLATE_FIELDS = [
   "name",
@@ -587,22 +587,38 @@ class CustomTemplateBadge extends HTMLElement {
   }
 }
 
+function registerCustomTemplateBadge() {
+  window.customBadges = window.customBadges || [];
+
+  const definition = {
+    type: CUSTOM_TEMPLATE_BADGE_TYPE,
+    name: CUSTOM_TEMPLATE_BADGE_NAME,
+    preview: false,
+    description: "A customizable badge with Home Assistant template support.",
+  };
+
+  const existingIndex = window.customBadges.findIndex(
+    (badge) => badge.type === CUSTOM_TEMPLATE_BADGE_TYPE
+  );
+
+  if (existingIndex >= 0) {
+    window.customBadges[existingIndex] = definition;
+  } else {
+    window.customBadges.push(definition);
+  }
+}
+
 if (!customElements.get(CUSTOM_TEMPLATE_BADGE_TYPE)) {
   customElements.define(CUSTOM_TEMPLATE_BADGE_TYPE, CustomTemplateBadge);
 }
 
-window.customBadges = window.customBadges || [];
+if (!customElements.get("custom-template-badge-editor")) {
+  customElements.define("custom-template-badge-editor", CustomTemplateBadgeEditor);
+}
 
-window.customBadges = window.customBadges.filter(
-  (badge) => badge.type !== CUSTOM_TEMPLATE_BADGE_TYPE
-);
-
-window.customBadges.push({
-  type: CUSTOM_TEMPLATE_BADGE_TYPE,
-  name: CUSTOM_TEMPLATE_BADGE_NAME,
-  preview: false,
-  description: "A customizable badge with Home Assistant template support.",
-});
+registerCustomTemplateBadge();
+setTimeout(registerCustomTemplateBadge, 0);
+setTimeout(registerCustomTemplateBadge, 1000);
 
 console.info(
   `%c${CUSTOM_TEMPLATE_BADGE_NAME} ${CUSTOM_TEMPLATE_BADGE_VERSION}`,
