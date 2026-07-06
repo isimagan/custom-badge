@@ -1,4 +1,5 @@
-const CUSTOM_JS_BADGE_VERSION = "0.1.5";
+const CUSTOM_JS_BADGE_VERSION = "0.1.6";
+const TEMPLATE_REGEX = /^\s*\[\[\[\s*([\s\S]*?)\s*\]\]\]\s*$/;
 
 class CustomJsBadge extends HTMLElement {
   constructor() {
@@ -28,14 +29,58 @@ class CustomJsBadge extends HTMLElement {
     return this._hass.states[this._config.entity];
   }
 
+  _readValue(value) {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  const match = value.match(TEMPLATE_REGEX);
+
+  if (!match) {
+    return value;
+  }
+
+  return this._evaluateTemplate(match[1], value);
+}
+
+_evaluateTemplate(code, originalValue) {
+  const hass = this._hass;
+  const entity = this._getStateObj();
+  const states = hass?.states ?? {};
+  const config = this._config;
+  const user = hass?.user;
+
+  const helpers = {
+    state: (entityId) => states[entityId]?.state,
+    attr: (entityId, attribute) => states[entityId]?.attributes?.[attribute],
+    hasEntity: (entityId) => Boolean(states[entityId]),
+  };
+
+  try {
+    return Function(
+      "hass",
+      "entity",
+      "states",
+      "config",
+      "user",
+      "helpers",
+      `"use strict";\n${code}`
+    )(hass, entity, states, config, user, helpers);
+  } catch (error) {
+    console.error("[custom-js-badge] Template error:", error, originalValue);
+    return "template error";
+  }
+}
+
 _getPrimary(stateObj) {
-  return (
+  const value =
     this._config.primary ??
     this._config.name ??
     stateObj?.attributes?.friendly_name ??
     this._config.entity ??
-    ""
-  );
+    "";
+
+  return this._readValue(value);
 }
 
 _formatState(stateObj) {
@@ -62,20 +107,25 @@ _formatState(stateObj) {
 }
 
 _getSecondary(stateObj) {
-  return (
+  const value =
     this._config.secondary ??
-    this._config.label ??
-    this._formatState(stateObj)
-  );
+    this._config.label;
+
+  if (value !== undefined) {
+    return this._readValue(value);
+  }
+
+  return this._formatState(stateObj);
 }
 
   _getIcon(stateObj) {
-    return (
-      this._config.icon ??
-      stateObj?.attributes?.icon ??
-      ""
-    );
-  }
+  const value =
+    this._config.icon ??
+    stateObj?.attributes?.icon ??
+    "";
+
+  return this._readValue(value);
+}
 
   _render() {
     if (!this.shadowRoot) return;
