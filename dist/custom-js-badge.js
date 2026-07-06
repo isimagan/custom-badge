@@ -1,6 +1,6 @@
 const CUSTOM_JS_BADGE_TYPE = "custom-js-badge";
 const CUSTOM_JS_BADGE_NAME = "Custom JS Badge";
-const CUSTOM_JS_BADGE_VERSION = "0.2.2";
+const CUSTOM_JS_BADGE_VERSION = "0.3.0";
 
 const TEMPLATE_REGEX = /^\s*\[\[\[\s*([\s\S]*?)\s*\]\]\]\s*$/;
 
