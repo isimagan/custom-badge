@@ -1,4 +1,4 @@
-const CUSTOM_JS_BADGE_VERSION = "0.1.4";
+const CUSTOM_JS_BADGE_VERSION = "0.1.5";
 
 class CustomJsBadge extends HTMLElement {
   constructor() {
@@ -50,7 +50,15 @@ _formatState(stateObj) {
   const state = stateObj.state ?? "";
   const unit = stateObj.attributes?.unit_of_measurement;
 
-  return unit ? `${state} ${unit}` : state;
+  if (unit) {
+    return `${state} ${unit}`;
+  }
+
+  if (stateObj.attributes?.device_class === "battery") {
+    return `${state} %`;
+  }
+
+  return state;
 }
 
 _getSecondary(stateObj) {
