@@ -1,4 +1,6 @@
-const CUSTOM_JS_BADGE_VERSION = "0.2.0";
+const CUSTOM_JS_BADGE_TYPE = "custom-js-badge";
+const CUSTOM_JS_BADGE_NAME = "Custom JS Badge";
+const CUSTOM_JS_BADGE_VERSION = "0.2.2";
 
 const TEMPLATE_REGEX = /^\s*\[\[\[\s*([\s\S]*?)\s*\]\]\]\s*$/;
 
@@ -17,7 +19,7 @@ class CustomJsBadge extends HTMLElement {
   }
 
   setConfig(config) {
-    this._config = config;
+    this._config = config ?? {};
     this._render();
   }
 
@@ -30,7 +32,7 @@ class CustomJsBadge extends HTMLElement {
     if (!this._config?.entity || !this._hass?.states) {
       return undefined;
     }
-
+  
     return this._hass.states[this._config.entity];
   }
 
@@ -74,6 +76,23 @@ class CustomJsBadge extends HTMLElement {
     return Boolean(evaluated);
   }
 
+  _normalizeTextValue(value) {
+    if (value === undefined || value === null || value === false) {
+      return "";
+    }
+  
+    return String(value);
+  }
+  
+  _escapeHtml(value) {
+    return this._normalizeTextValue(value)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
 _evaluateTemplate(code, originalValue) {
   const hass = this._hass;
   const entity = this._getStateObj();
@@ -99,7 +118,10 @@ _evaluateTemplate(code, originalValue) {
     )(hass, entity, states, config, user, helpers);
   } catch (error) {
     console.error("[custom-js-badge] Template error:", error, originalValue);
-    return "template error";
+  
+    return this._readValue(
+      this._config.template_error_label ?? "Template error"
+    );
   }
 }
 _getActionConfig() {
@@ -183,7 +205,19 @@ _getPrimary(stateObj) {
 
 _formatState(stateObj) {
   if (!stateObj) {
-    return "";
+    return this._readValue(this._config.missing_entity_label ?? "");
+  }
+
+  if (stateObj.state === "unavailable") {
+    return this._readValue(
+      this._config.unavailable_label ?? "Unavailable"
+    );
+  }
+
+  if (stateObj.state === "unknown") {
+    return this._readValue(
+      this._config.unknown_label ?? "Unknown"
+    );
   }
 
   if (this._hass?.formatEntityState) {
@@ -230,9 +264,30 @@ _getSecondary(stateObj) {
 
     const stateObj = this._getStateObj();
 
-    const primary = this._getPrimary(stateObj);
-    const secondary = this._getSecondary(stateObj);
-    const icon = this._getIcon(stateObj);
+    const entityConfigured = Boolean(this._config.entity);
+    const entityMissing = entityConfigured && !stateObj;
+    const entityUnavailable = stateObj?.state === "unavailable";
+    const entityUnknown = stateObj?.state === "unknown";
+    
+    const hideIfMissing = this._getBooleanValue(this._config.hide_if_missing, false);
+    const hideIfUnavailable = this._getBooleanValue(this._config.hide_if_unavailable, false);
+    const hideIfUnknown = this._getBooleanValue(this._config.hide_if_unknown, false);
+    
+    if (
+      (entityMissing && hideIfMissing) ||
+      (entityUnavailable && hideIfUnavailable) ||
+      (entityUnknown && hideIfUnknown)
+    ) {
+      this.shadowRoot.innerHTML = "";
+      return;
+    }
+
+    const primary = this._normalizeTextValue(this._getPrimary(stateObj));
+    const secondary = this._normalizeTextValue(this._getSecondary(stateObj));
+    const icon = this._normalizeTextValue(this._getIcon(stateObj));
+    
+    const safePrimary = this._escapeHtml(primary);
+    const safeSecondary = this._escapeHtml(secondary);
 
     const iconColor = this._getStyleValue(
       this._config.icon_color ?? this._config.color,
@@ -337,8 +392,8 @@ _getSecondary(stateObj) {
       <div class="badge">
         <span class="icon-container"></span>
         <div class="text">
-          ${showName && primary ? `<div class="primary">${primary}</div>` : ""}
-          ${showLabel && secondary ? `<div class="${showName && primary ? "secondary" : "only-secondary"}">${secondary}</div>` : ""}
+          ${showName && primary ? `<div class="primary">${safePrimary}</div>` : ""}
+          ${showLabel && secondary ? `<div class="${showName && primary ? "secondary" : "only-secondary"}">${safeSecondary}</div>` : ""}
         </div>
       </div>
     `;
@@ -389,17 +444,24 @@ _getSecondary(stateObj) {
   }
 }
 
-customElements.define("custom-js-badge", CustomJsBadge);
+if (!customElements.get(CUSTOM_JS_BADGE_TYPE)) {
+  customElements.define(CUSTOM_JS_BADGE_TYPE, CustomJsBadge);
+}
 
 window.customBadges = window.customBadges || [];
+
+window.customBadges = window.customBadges.filter(
+  (badge) => badge.type !== CUSTOM_JS_BADGE_TYPE
+);
+
 window.customBadges.push({
-  type: "custom-js-badge",
-  name: "Custom JS Badge",
+  type: CUSTOM_JS_BADGE_TYPE,
+  name: CUSTOM_JS_BADGE_NAME,
   preview: false,
   description: "A customizable badge with JavaScript template support.",
 });
 
 console.info(
-  `%cCUSTOM-JS-BADGE ${CUSTOM_JS_BADGE_VERSION}`,
+  `%c${CUSTOM_JS_BADGE_NAME} ${CUSTOM_JS_BADGE_VERSION}`,
   "color: var(--primary-color); font-weight: bold;"
 );
