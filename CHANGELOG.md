@@ -12,6 +12,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - More styling options.
 - Shared source structure to reduce duplicated code between the two badges.
 
+## v0.3.1
+
+### Fixed
+
+* Improved registration of `custom:custom-js-badge` in the Home Assistant badge picker.
+* Prevented `window.customBadges` from being replaced during registration.
+* Reduced the risk of Custom Badge interfering with other community badges such as Mushroom, Team Tracker, and other custom badge integrations.
+* Fixed cases where existing Custom Badge instances worked in dashboards, but the badge did not appear when adding a new badge from the UI.
+
+### Changed
+
+* Custom badge picker registration now updates an existing entry in-place instead of filtering and replacing the global `window.customBadges` array.
+* Added delayed re-registration to make badge picker discovery more reliable if Home Assistant or other custom badges update the shared badge registry after initial load
+
 ## [0.3.0] - 2026-07-06
 
 ### Added
