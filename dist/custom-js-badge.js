@@ -1,6 +1,6 @@
 const CUSTOM_JS_BADGE_TYPE = "custom-js-badge";
 const CUSTOM_JS_BADGE_NAME = "Custom JS Badge";
-const CUSTOM_JS_BADGE_VERSION = "0.3.1";
+const CUSTOM_JS_BADGE_VERSION = "0.3.3";
 
 const TEMPLATE_REGEX = /^\s*\[\[\[\s*([\s\S]*?)\s*\]\]\]\s*$/;
 
@@ -318,11 +318,11 @@ _getSecondary(stateObj) {
     const showName = this._getBooleanValue(this._config.show_name, true);
     const showLabel = this._getBooleanValue(this._config.show_label, true);
     
-    const height = this._getStyleValue(this._config.height, "36px");
-    const borderRadius = this._getStyleValue(this._config.border_radius, "18px");
-    const padding = this._getStyleValue(this._config.padding, "0 12px 0 10px");
-    const gap = this._getStyleValue(this._config.gap, "8px");
-    const iconSize = this._getStyleValue(this._config.icon_size, "20px");
+    const height = this._getStyleValue(this._config.height, "52px");
+    const borderRadius = this._getStyleValue(this._config.border_radius, "26px");
+    const padding = this._getStyleValue(this._config.padding, "0 20px 0 16px");
+    const gap = this._getStyleValue(this._config.gap, "12px");
+    const iconSize = this._getStyleValue(this._config.icon_size, "28px");
 
     this.shadowRoot.innerHTML = `
       <style>
@@ -358,31 +358,34 @@ _getSecondary(stateObj) {
           flex-direction: column;
           justify-content: center;
           min-width: 0;
-          line-height: 1.1;
+          line-height: 1.05;
         }
-    
+        
         .primary {
           color: var(--custom-js-badge-name-color);
-          font-size: 11px;
-          font-weight: 400;
+          font-size: 14px;
+          font-weight: 500;
+          line-height: 1.05;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
         }
-    
+        
         .secondary {
           color: var(--custom-js-badge-label-color);
-          font-size: 12px;
-          font-weight: 600;
+          font-size: 20px;
+          font-weight: 700;
+          line-height: 1.05;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
         }
-    
+        
         .only-secondary {
           color: var(--custom-js-badge-label-color);
-          font-size: 12px;
-          font-weight: 600;
+          font-size: 20px;
+          font-weight: 700;
+          line-height: 1.05;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
