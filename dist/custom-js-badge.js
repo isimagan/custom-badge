@@ -1,6 +1,6 @@
 const CUSTOM_JS_BADGE_TYPE = "custom-js-badge";
 const CUSTOM_JS_BADGE_NAME = "Custom JS Badge";
-const CUSTOM_JS_BADGE_VERSION = "0.3.0";
+const CUSTOM_JS_BADGE_VERSION = "0.3.1";
 
 const TEMPLATE_REGEX = /^\s*\[\[\[\s*([\s\S]*?)\s*\]\]\]\s*$/;
 
@@ -444,22 +444,34 @@ _getSecondary(stateObj) {
   }
 }
 
+function registerCustomJsBadge() {
+  window.customBadges = window.customBadges || [];
+
+  const definition = {
+    type: CUSTOM_JS_BADGE_TYPE,
+    name: CUSTOM_JS_BADGE_NAME,
+    preview: false,
+    description: "A customizable badge with JavaScript template support.",
+  };
+
+  const existingIndex = window.customBadges.findIndex(
+    (badge) => badge.type === CUSTOM_JS_BADGE_TYPE
+  );
+
+  if (existingIndex >= 0) {
+    window.customBadges[existingIndex] = definition;
+  } else {
+    window.customBadges.push(definition);
+  }
+}
+
 if (!customElements.get(CUSTOM_JS_BADGE_TYPE)) {
   customElements.define(CUSTOM_JS_BADGE_TYPE, CustomJsBadge);
 }
 
-window.customBadges = window.customBadges || [];
-
-window.customBadges = window.customBadges.filter(
-  (badge) => badge.type !== CUSTOM_JS_BADGE_TYPE
-);
-
-window.customBadges.push({
-  type: CUSTOM_JS_BADGE_TYPE,
-  name: CUSTOM_JS_BADGE_NAME,
-  preview: false,
-  description: "A customizable badge with JavaScript template support.",
-});
+registerCustomJsBadge();
+setTimeout(registerCustomJsBadge, 0);
+setTimeout(registerCustomJsBadge, 1000);
 
 console.info(
   `%c${CUSTOM_JS_BADGE_NAME} ${CUSTOM_JS_BADGE_VERSION}`,
