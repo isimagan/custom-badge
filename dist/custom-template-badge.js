@@ -461,11 +461,11 @@ class CustomTemplateBadge extends HTMLElement {
     const showName = this._getBooleanValue(this._config.show_name, "show_name", true);
     const showLabel = this._getBooleanValue(this._config.show_label, "show_label", true);
 
-    const height = this._getStyleValue(this._config.height, "height", "36px");
-    const borderRadius = this._getStyleValue(this._config.border_radius, "border_radius", "18px");
-    const padding = this._getStyleValue(this._config.padding, "padding", "0 12px 0 10px");
-    const gap = this._getStyleValue(this._config.gap, "gap", "8px");
-    const iconSize = this._getStyleValue(this._config.icon_size, "icon_size", "20px");
+    const height = this._getStyleValue(this._config.height, "52px");
+    const borderRadius = this._getStyleValue(this._config.border_radius, "26px");
+    const padding = this._getStyleValue(this._config.padding, "0 20px 0 16px");
+    const gap = this._getStyleValue(this._config.gap, "12px");
+    const iconSize = this._getStyleValue(this._config.icon_size, "28px");
 
     this.shadowRoot.innerHTML = `
       <style>
@@ -477,13 +477,13 @@ class CustomTemplateBadge extends HTMLElement {
           box-sizing: border-box;
           display: inline-flex;
           align-items: center;
-          gap: var(--custom-template-badge-gap);
-          min-height: var(--custom-template-badge-height);
-          padding: var(--custom-template-badge-padding);
-          border-radius: var(--custom-template-badge-border-radius);
-          background: var(--custom-template-badge-background-color);
+          gap: var(--custom-js-badge-gap);
+          min-height: var(--custom-js-badge-height);
+          padding: var(--custom-js-badge-padding);
+          border-radius: var(--custom-js-badge-border-radius);
+          background: var(--custom-js-badge-background-color);
           color: var(--primary-text-color);
-          border: 1px solid var(--custom-template-badge-border-color);
+          border: 1px solid var(--custom-js-badge-border-color);
           cursor: pointer;
           user-select: none;
           -webkit-tap-highlight-color: transparent;
@@ -491,8 +491,8 @@ class CustomTemplateBadge extends HTMLElement {
 
         ha-icon,
         ha-state-icon {
-          --mdc-icon-size: var(--custom-template-badge-icon-size);
-          color: var(--custom-template-badge-icon-color);
+          --mdc-icon-size: var(--custom-js-badge-icon-size);
+          color: var(--custom-js-badge-icon-color);
           flex: 0 0 auto;
         }
 
@@ -501,31 +501,34 @@ class CustomTemplateBadge extends HTMLElement {
           flex-direction: column;
           justify-content: center;
           min-width: 0;
-          line-height: 1.1;
+          line-height: 1.05;
         }
-
+        
         .primary {
-          color: var(--custom-template-badge-name-color);
-          font-size: 11px;
-          font-weight: 400;
+          color: var(--custom-js-badge-name-color);
+          font-size: 14px;
+          font-weight: 500;
+          line-height: 1.05;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
         }
-
+        
         .secondary {
-          color: var(--custom-template-badge-label-color);
-          font-size: 12px;
-          font-weight: 600;
+          color: var(--custom-js-badge-label-color);
+          font-size: 20px;
+          font-weight: 700;
+          line-height: 1.05;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
         }
-
+        
         .only-secondary {
-          color: var(--custom-template-badge-label-color);
-          font-size: 12px;
-          font-weight: 600;
+          color: var(--custom-js-badge-label-color);
+          font-size: 20px;
+          font-weight: 700;
+          line-height: 1.05;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
