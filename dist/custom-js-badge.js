@@ -1,4 +1,4 @@
-const CUSTOM_JS_BADGE_VERSION = "0.1.1";
+const CUSTOM_JS_BADGE_VERSION = "0.1.2";
 
 class CustomJsBadge extends HTMLElement {
   constructor() {
@@ -51,7 +51,7 @@ class CustomJsBadge extends HTMLElement {
     return (
       this._config.icon ??
       stateObj?.attributes?.icon ??
-      "mdi:help-circle-outline"
+      ""
     );
   }
 
@@ -101,26 +101,27 @@ class CustomJsBadge extends HTMLElement {
         }
 
         .primary {
-          color: var(--primary-text-color);
-          font-size: 12px;
-          font-weight: 500;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .secondary {
           color: var(--secondary-text-color);
           font-size: 11px;
+          font-weight: 400;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
         }
-
+        
+        .secondary {
+          color: var(--primary-text-color);
+          font-size: 12px;
+          font-weight: 600;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        
         .only-secondary {
           color: var(--primary-text-color);
           font-size: 12px;
-          font-weight: 500;
+          font-weight: 600;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
