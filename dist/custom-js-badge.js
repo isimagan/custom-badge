@@ -1,4 +1,4 @@
-const CUSTOM_JS_BADGE_VERSION = "0.1.2";
+const CUSTOM_JS_BADGE_VERSION = "0.1.4";
 
 class CustomJsBadge extends HTMLElement {
   constructor() {
@@ -28,24 +28,38 @@ class CustomJsBadge extends HTMLElement {
     return this._hass.states[this._config.entity];
   }
 
-  _getPrimary(stateObj) {
-    return (
-      this._config.primary ??
-      this._config.name ??
-      stateObj?.attributes?.friendly_name ??
-      this._config.entity ??
-      ""
-    );
+_getPrimary(stateObj) {
+  return (
+    this._config.primary ??
+    this._config.name ??
+    stateObj?.attributes?.friendly_name ??
+    this._config.entity ??
+    ""
+  );
+}
+
+_formatState(stateObj) {
+  if (!stateObj) {
+    return "";
   }
 
-  _getSecondary(stateObj) {
-    return (
-      this._config.secondary ??
-      this._config.label ??
-      stateObj?.state ??
-      ""
-    );
+  if (this._hass?.formatEntityState) {
+    return this._hass.formatEntityState(stateObj);
   }
+
+  const state = stateObj.state ?? "";
+  const unit = stateObj.attributes?.unit_of_measurement;
+
+  return unit ? `${state} ${unit}` : state;
+}
+
+_getSecondary(stateObj) {
+  return (
+    this._config.secondary ??
+    this._config.label ??
+    this._formatState(stateObj)
+  );
+}
 
   _getIcon(stateObj) {
     return (
