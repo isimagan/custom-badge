@@ -4,13 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses semantic versioning where practical.
 
-## [Unreleased]
+## v0.3.2
 
-### Planned
+### Fixed
+- Added `custom-badge.js` as a shared HACS entrypoint.
+- Ensured both `custom:custom-js-badge` and `custom:custom-template-badge` are loaded from a single dashboard resource.
+- Fixed cases where only `custom:custom-js-badge` appeared in the Home Assistant badge picker.
 
-- More examples.
-- More styling options.
-- Shared source structure to reduce duplicated code between the two badges.
+### Changed
+- Renamed the repository/package structure from `custom-js-badge` to `custom-badge`.
+- Updated the HACS display name to `Custom Badge`.
+- Updated the HACS entry file from `custom-js-badge.js` to `custom-badge.js`.
+- Prepared the repository structure for multiple badge types in the same package.
 
 ## v0.3.1
 
