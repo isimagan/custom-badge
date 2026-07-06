@@ -467,41 +467,41 @@ class CustomTemplateBadge extends HTMLElement {
     const showName = this._getBooleanValue(this._config.show_name, "show_name", true);
     const showLabel = this._getBooleanValue(this._config.show_label, "show_label", true);
 
-    const height = this._getStyleValue(this._config.height, "52px");
-    const borderRadius = this._getStyleValue(this._config.border_radius, "26px");
-    const padding = this._getStyleValue(this._config.padding, "0 20px 0 16px");
-    const gap = this._getStyleValue(this._config.gap, "12px");
-    const iconSize = this._getStyleValue(this._config.icon_size, "28px");
+    const height = this._getStyleValue(this._config.height, "height", "52px");
+    const borderRadius = this._getStyleValue(this._config.border_radius, "border_radius", "26px");
+    const padding = this._getStyleValue(this._config.padding, "padding", "0 20px 0 16px");
+    const gap = this._getStyleValue(this._config.gap, "gap", "12px");
+    const iconSize = this._getStyleValue(this._config.icon_size, "icon_size", "28px");
 
     this.shadowRoot.innerHTML = `
       <style>
         :host {
           display: inline-block;
         }
-
+        
         .badge {
           box-sizing: border-box;
           display: inline-flex;
           align-items: center;
-          gap: var(--custom-js-badge-gap);
-          min-height: var(--custom-js-badge-height);
-          padding: var(--custom-js-badge-padding);
-          border-radius: var(--custom-js-badge-border-radius);
-          background: var(--custom-js-badge-background-color);
+          gap: var(--custom-template-badge-gap);
+          min-height: var(--custom-template-badge-height);
+          padding: var(--custom-template-badge-padding);
+          border-radius: var(--custom-template-badge-border-radius);
+          background: var(--custom-template-badge-background-color);
           color: var(--primary-text-color);
-          border: 1px solid var(--custom-js-badge-border-color);
+          border: 1px solid var(--custom-template-badge-border-color);
           cursor: pointer;
           user-select: none;
           -webkit-tap-highlight-color: transparent;
         }
-
+        
         ha-icon,
         ha-state-icon {
-          --mdc-icon-size: var(--custom-js-badge-icon-size);
-          color: var(--custom-js-badge-icon-color);
+          --mdc-icon-size: var(--custom-template-badge-icon-size);
+          color: var(--custom-template-badge-icon-color);
           flex: 0 0 auto;
         }
-
+        
         .text {
           display: flex;
           flex-direction: column;
@@ -511,7 +511,7 @@ class CustomTemplateBadge extends HTMLElement {
         }
         
         .primary {
-          color: var(--custom-js-badge-name-color);
+          color: var(--custom-template-badge-name-color);
           font-size: 14px;
           font-weight: 500;
           line-height: 1.05;
@@ -521,7 +521,7 @@ class CustomTemplateBadge extends HTMLElement {
         }
         
         .secondary {
-          color: var(--custom-js-badge-label-color);
+          color: var(--custom-template-badge-label-color);
           font-size: 20px;
           font-weight: 700;
           line-height: 1.05;
@@ -531,7 +531,7 @@ class CustomTemplateBadge extends HTMLElement {
         }
         
         .only-secondary {
-          color: var(--custom-js-badge-label-color);
+          color: var(--custom-template-badge-label-color);
           font-size: 20px;
           font-weight: 700;
           line-height: 1.05;
@@ -619,10 +619,6 @@ function registerCustomTemplateBadge() {
 
 if (!customElements.get(CUSTOM_TEMPLATE_BADGE_TYPE)) {
   customElements.define(CUSTOM_TEMPLATE_BADGE_TYPE, CustomTemplateBadge);
-}
-
-if (!customElements.get("custom-template-badge-editor")) {
-  customElements.define("custom-template-badge-editor", CustomTemplateBadgeEditor);
 }
 
 registerCustomTemplateBadge();
