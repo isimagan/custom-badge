@@ -69,7 +69,7 @@ class CustomJsBadge extends HTMLElement {
         :host {
           display: inline-block;
         }
-
+    
         .badge {
           box-sizing: border-box;
           display: inline-flex;
@@ -85,13 +85,14 @@ class CustomJsBadge extends HTMLElement {
           user-select: none;
           -webkit-tap-highlight-color: transparent;
         }
-
-        ha-icon {
+    
+        ha-icon,
+        ha-state-icon {
           --mdc-icon-size: 20px;
           color: var(--state-icon-color);
           flex: 0 0 auto;
         }
-
+    
         .text {
           display: flex;
           flex-direction: column;
@@ -99,7 +100,7 @@ class CustomJsBadge extends HTMLElement {
           min-width: 0;
           line-height: 1.1;
         }
-
+    
         .primary {
           color: var(--secondary-text-color);
           font-size: 11px;
@@ -108,7 +109,7 @@ class CustomJsBadge extends HTMLElement {
           overflow: hidden;
           text-overflow: ellipsis;
         }
-        
+    
         .secondary {
           color: var(--primary-text-color);
           font-size: 12px;
@@ -117,7 +118,7 @@ class CustomJsBadge extends HTMLElement {
           overflow: hidden;
           text-overflow: ellipsis;
         }
-        
+    
         .only-secondary {
           color: var(--primary-text-color);
           font-size: 12px;
@@ -127,15 +128,30 @@ class CustomJsBadge extends HTMLElement {
           text-overflow: ellipsis;
         }
       </style>
-
+    
       <div class="badge">
-        ${icon ? `<ha-icon icon="${icon}"></ha-icon>` : ""}
+        <span class="icon-container"></span>
         <div class="text">
           ${primary ? `<div class="primary">${primary}</div>` : ""}
           ${secondary ? `<div class="${primary ? "secondary" : "only-secondary"}">${secondary}</div>` : ""}
         </div>
       </div>
     `;
+    
+    const iconContainer = this.shadowRoot.querySelector(".icon-container");
+    
+    if (icon) {
+      const iconEl = document.createElement("ha-icon");
+      iconEl.setAttribute("icon", icon);
+      iconContainer.appendChild(iconEl);
+    } else if (stateObj) {
+      const stateIconEl = document.createElement("ha-state-icon");
+      stateIconEl.hass = this._hass;
+      stateIconEl.stateObj = stateObj;
+      iconContainer.appendChild(stateIconEl);
+    } else {
+      iconContainer.remove();
+    }
   }
 
   static getStubConfig() {
