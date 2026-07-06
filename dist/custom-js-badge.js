@@ -1,4 +1,4 @@
-const CUSTOM_JS_BADGE_VERSION = "0.1.9";
+const CUSTOM_JS_BADGE_VERSION = "0.2.0";
 
 const TEMPLATE_REGEX = /^\s*\[\[\[\s*([\s\S]*?)\s*\]\]\]\s*$/;
 
@@ -54,6 +54,24 @@ class CustomJsBadge extends HTMLElement {
     }
   
     return this._readValue(value);
+  }
+
+  _getBooleanValue(value, fallback = true) {
+    if (value === undefined || value === null) {
+      return fallback;
+    }
+  
+    const evaluated = this._readValue(value);
+  
+    if (typeof evaluated === "boolean") {
+      return evaluated;
+    }
+  
+    if (typeof evaluated === "string") {
+      return evaluated.toLowerCase() !== "false";
+    }
+  
+    return Boolean(evaluated);
   }
 
 _evaluateTemplate(code, originalValue) {
@@ -241,6 +259,16 @@ _getSecondary(stateObj) {
       "var(--primary-text-color)"
     );
 
+    const showIcon = this._getBooleanValue(this._config.show_icon, true);
+    const showName = this._getBooleanValue(this._config.show_name, true);
+    const showLabel = this._getBooleanValue(this._config.show_label, true);
+    
+    const height = this._getStyleValue(this._config.height, "36px");
+    const borderRadius = this._getStyleValue(this._config.border_radius, "18px");
+    const padding = this._getStyleValue(this._config.padding, "0 12px 0 10px");
+    const gap = this._getStyleValue(this._config.gap, "8px");
+    const iconSize = this._getStyleValue(this._config.icon_size, "20px");
+
     this.shadowRoot.innerHTML = `
       <style>
         :host {
@@ -251,10 +279,10 @@ _getSecondary(stateObj) {
           box-sizing: border-box;
           display: inline-flex;
           align-items: center;
-          gap: 8px;
-          min-height: 36px;
-          padding: 0 12px 0 10px;
-          border-radius: 18px;
+          gap: var(--custom-js-badge-gap);
+          min-height: var(--custom-js-badge-height);
+          padding: var(--custom-js-badge-padding);
+          border-radius: var(--custom-js-badge-border-radius);
           background: var(--custom-js-badge-background-color);
           color: var(--primary-text-color);
           border: 1px solid var(--custom-js-badge-border-color);
@@ -265,7 +293,7 @@ _getSecondary(stateObj) {
     
         ha-icon,
         ha-state-icon {
-          --mdc-icon-size: 20px;
+          --mdc-icon-size: var(--custom-js-badge-icon-size);
           color: var(--custom-js-badge-icon-color);
           flex: 0 0 auto;
         }
@@ -309,8 +337,8 @@ _getSecondary(stateObj) {
       <div class="badge">
         <span class="icon-container"></span>
         <div class="text">
-          ${primary ? `<div class="primary">${primary}</div>` : ""}
-          ${secondary ? `<div class="${primary ? "secondary" : "only-secondary"}">${secondary}</div>` : ""}
+          ${showName && primary ? `<div class="primary">${primary}</div>` : ""}
+          ${showLabel && secondary ? `<div class="${showName && primary ? "secondary" : "only-secondary"}">${secondary}</div>` : ""}
         </div>
       </div>
     `;
@@ -323,6 +351,12 @@ _getSecondary(stateObj) {
     badge.style.setProperty("--custom-js-badge-name-color", nameColor);
     badge.style.setProperty("--custom-js-badge-label-color", labelColor);
 
+    badge.style.setProperty("--custom-js-badge-height", height);
+    badge.style.setProperty("--custom-js-badge-border-radius", borderRadius);
+    badge.style.setProperty("--custom-js-badge-padding", padding);
+    badge.style.setProperty("--custom-js-badge-gap", gap);
+    badge.style.setProperty("--custom-js-badge-icon-size", iconSize);
+
     badge.addEventListener("pointerdown", () => this._onPointerDown());
     badge.addEventListener("pointerup", () => this._onPointerUp());
     badge.addEventListener("pointerleave", () => this._onPointerUp());
@@ -332,7 +366,9 @@ _getSecondary(stateObj) {
     
     const iconContainer = this.shadowRoot.querySelector(".icon-container");
     
-    if (icon) {
+    if (!showIcon) {
+      iconContainer.remove();
+    } else if (icon) {
       const iconEl = document.createElement("ha-icon");
       iconEl.setAttribute("icon", icon);
       iconContainer.appendChild(iconEl);
@@ -344,7 +380,6 @@ _getSecondary(stateObj) {
     } else {
       iconContainer.remove();
     }
-  }
 
   static getStubConfig() {
     return {
