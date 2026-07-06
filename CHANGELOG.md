@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses semantic versioning where practical.
 
+## v0.3.3
+
+### Changed
+- Updated the default badge typography to better match Home Assistant's standard badge style.
+- Increased the default badge height, border radius, padding, gap and icon size.
+- Increased the label/state font size and weight.
+- Adjusted the name font size and weight to better match the standard Home Assistant badge layout.
+
+### Notes
+- Existing custom layout options such as `height`, `padding`, `border_radius`, `gap` and `icon_size` still override the new defaults.
+
 ## v0.3.2
 
 ### Fixed
