@@ -1,3 +1,5 @@
+import "./custom-template-badge-editor.js";
+
 const CUSTOM_TEMPLATE_BADGE_TYPE = "custom-template-badge";
 const CUSTOM_TEMPLATE_BADGE_NAME = "Custom Template Badge";
 const CUSTOM_TEMPLATE_BADGE_VERSION = "0.3.1";
@@ -50,6 +52,10 @@ class CustomTemplateBadge extends HTMLElement {
     this._templateUnsubs = new Map();
     this._templateSignature = "";
     this._templateSetupScheduled = false;
+  }
+
+  static getConfigElement() {
+    return document.createElement("custom-template-badge-editor");
   }
 
   setConfig(config) {
