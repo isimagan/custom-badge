@@ -380,6 +380,7 @@ _getSecondary(stateObj) {
     } else {
       iconContainer.remove();
     }
+  }
 
   static getStubConfig() {
     return {
