@@ -4,6 +4,33 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses semantic versioning where practical.
 
+## v0.4.1
+
+### Fixed
+
+- Fixed `custom:custom-template-badge` not appearing in the Home Assistant badge picker.
+- Fixed a crash in `custom-template-badge.js` caused by registering `CustomTemplateBadgeEditor` from the wrong file.
+- Removed duplicate editor registration from `custom-template-badge.js` now that the editor lives in `custom-template-badge-editor.js`.
+- Fixed CSS variable mismatches in `custom-template-badge.js`.
+- Fixed template badge styling by using `--custom-template-badge-*` variables instead of `--custom-js-badge-*`.
+- Fixed layout option handling in `custom-template-badge.js` for:
+  - `height`
+  - `border_radius`
+  - `padding`
+  - `gap`
+  - `icon_size`
+
+### Changed
+
+- `custom-template-badge.js` now imports `custom-template-badge-editor.js` and lets the editor module register itself.
+- Improved separation between the template badge and its visual editor module.
+
+### Notes
+
+- This is a bugfix release for `v0.4.0`.
+- Existing `custom:custom-js-badge` configurations are not affected.
+- Existing `custom:custom-template-badge` configurations should continue to work without YAML changes.
+
 ## v0.4.0
 
 ### Added
