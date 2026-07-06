@@ -1,15 +1,19 @@
-const CUSTOM_JS_BADGE_VERSION = "0.1.6";
+const CUSTOM_JS_BADGE_VERSION = "0.1.8";
 
 const TEMPLATE_REGEX = /^\s*\[\[\[\s*([\s\S]*?)\s*\]\]\]\s*$/;
 
 class CustomJsBadge extends HTMLElement {
   constructor() {
     super();
-
+  
     this.attachShadow({ mode: "open" });
-
+  
     this._config = {};
     this._hass = undefined;
+  
+    this._holdTimer = undefined;
+    this._tapTimer = undefined;
+    this._holdTriggered = false;
   }
 
   setConfig(config) {
@@ -71,6 +75,73 @@ _evaluateTemplate(code, originalValue) {
     console.error("[custom-js-badge] Template error:", error, originalValue);
     return "template error";
   }
+}
+_getActionConfig() {
+  const hasEntity = Boolean(this._config?.entity);
+
+  return {
+    ...this._config,
+    tap_action: this._config.tap_action ?? {
+      action: hasEntity ? "more-info" : "none",
+    },
+    hold_action: this._config.hold_action ?? {
+      action: "none",
+    },
+    double_tap_action: this._config.double_tap_action ?? {
+      action: "none",
+    },
+  };
+}
+
+_fireHassAction(action) {
+  const event = new Event("hass-action", {
+    bubbles: true,
+    composed: true,
+  });
+
+  event.detail = {
+    config: this._getActionConfig(),
+    action,
+  };
+
+  this.dispatchEvent(event);
+}
+
+_onPointerDown() {
+  clearTimeout(this._holdTimer);
+
+  this._holdTriggered = false;
+
+  this._holdTimer = setTimeout(() => {
+    this._holdTriggered = true;
+    this._fireHassAction("hold");
+  }, 500);
+}
+
+_onPointerUp() {
+  clearTimeout(this._holdTimer);
+}
+
+_onClick(event) {
+  if (this._holdTriggered) {
+    event.preventDefault();
+    event.stopPropagation();
+    return;
+  }
+
+  clearTimeout(this._tapTimer);
+
+  this._tapTimer = setTimeout(() => {
+    this._fireHassAction("tap");
+  }, 250);
+}
+
+_onDoubleClick(event) {
+  event.preventDefault();
+  event.stopPropagation();
+
+  clearTimeout(this._tapTimer);
+  this._fireHassAction("double_tap");
 }
 
 _getPrimary(stateObj) {
@@ -210,6 +281,15 @@ _getSecondary(stateObj) {
         </div>
       </div>
     `;
+
+    const badge = this.shadowRoot.querySelector(".badge");
+
+    badge.addEventListener("pointerdown", () => this._onPointerDown());
+    badge.addEventListener("pointerup", () => this._onPointerUp());
+    badge.addEventListener("pointerleave", () => this._onPointerUp());
+    badge.addEventListener("pointercancel", () => this._onPointerUp());
+    badge.addEventListener("click", (event) => this._onClick(event));
+    badge.addEventListener("dblclick", (event) => this._onDoubleClick(event));
     
     const iconContainer = this.shadowRoot.querySelector(".icon-container");
     
