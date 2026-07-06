@@ -1,4 +1,4 @@
-const CUSTOM_JS_BADGE_VERSION = "0.1.8";
+const CUSTOM_JS_BADGE_VERSION = "0.1.9";
 
 const TEMPLATE_REGEX = /^\s*\[\[\[\s*([\s\S]*?)\s*\]\]\]\s*$/;
 
@@ -35,18 +35,26 @@ class CustomJsBadge extends HTMLElement {
   }
 
   _readValue(value) {
-  if (typeof value !== "string") {
-    return value;
+    if (typeof value !== "string") {
+      return value;
+    }
+  
+    const match = value.match(TEMPLATE_REGEX);
+  
+    if (!match) {
+      return value;
+    }
+  
+    return this._evaluateTemplate(match[1], value);
   }
 
-  const match = value.match(TEMPLATE_REGEX);
-
-  if (!match) {
-    return value;
+  _getStyleValue(value, fallback) {
+    if (value === undefined || value === null || value === "") {
+      return fallback;
+    }
+  
+    return this._readValue(value);
   }
-
-  return this._evaluateTemplate(match[1], value);
-}
 
 _evaluateTemplate(code, originalValue) {
   const hass = this._hass;
@@ -208,6 +216,31 @@ _getSecondary(stateObj) {
     const secondary = this._getSecondary(stateObj);
     const icon = this._getIcon(stateObj);
 
+    const iconColor = this._getStyleValue(
+      this._config.icon_color ?? this._config.color,
+      "var(--state-icon-color)"
+    );
+    
+    const backgroundColor = this._getStyleValue(
+      this._config.background_color,
+      "var(--ha-card-background, var(--card-background-color))"
+    );
+    
+    const borderColor = this._getStyleValue(
+      this._config.border_color,
+      "var(--divider-color)"
+    );
+    
+    const nameColor = this._getStyleValue(
+      this._config.name_color ?? this._config.primary_color,
+      "var(--secondary-text-color)"
+    );
+    
+    const labelColor = this._getStyleValue(
+      this._config.label_color ?? this._config.secondary_color,
+      "var(--primary-text-color)"
+    );
+
     this.shadowRoot.innerHTML = `
       <style>
         :host {
@@ -222,9 +255,9 @@ _getSecondary(stateObj) {
           min-height: 36px;
           padding: 0 12px 0 10px;
           border-radius: 18px;
-          background: var(--ha-card-background, var(--card-background-color));
+          background: var(--custom-js-badge-background-color);
           color: var(--primary-text-color);
-          border: 1px solid var(--divider-color);
+          border: 1px solid var(--custom-js-badge-border-color);
           cursor: pointer;
           user-select: none;
           -webkit-tap-highlight-color: transparent;
@@ -233,7 +266,7 @@ _getSecondary(stateObj) {
         ha-icon,
         ha-state-icon {
           --mdc-icon-size: 20px;
-          color: var(--state-icon-color);
+          color: var(--custom-js-badge-icon-color);
           flex: 0 0 auto;
         }
     
@@ -246,7 +279,7 @@ _getSecondary(stateObj) {
         }
     
         .primary {
-          color: var(--secondary-text-color);
+          color: var(--custom-js-badge-name-color);
           font-size: 11px;
           font-weight: 400;
           white-space: nowrap;
@@ -255,7 +288,7 @@ _getSecondary(stateObj) {
         }
     
         .secondary {
-          color: var(--primary-text-color);
+          color: var(--custom-js-badge-label-color);
           font-size: 12px;
           font-weight: 600;
           white-space: nowrap;
@@ -264,7 +297,7 @@ _getSecondary(stateObj) {
         }
     
         .only-secondary {
-          color: var(--primary-text-color);
+          color: var(--custom-js-badge-label-color);
           font-size: 12px;
           font-weight: 600;
           white-space: nowrap;
@@ -283,6 +316,12 @@ _getSecondary(stateObj) {
     `;
 
     const badge = this.shadowRoot.querySelector(".badge");
+
+    badge.style.setProperty("--custom-js-badge-icon-color", iconColor);
+    badge.style.setProperty("--custom-js-badge-background-color", backgroundColor);
+    badge.style.setProperty("--custom-js-badge-border-color", borderColor);
+    badge.style.setProperty("--custom-js-badge-name-color", nameColor);
+    badge.style.setProperty("--custom-js-badge-label-color", labelColor);
 
     badge.addEventListener("pointerdown", () => this._onPointerDown());
     badge.addEventListener("pointerup", () => this._onPointerUp());
