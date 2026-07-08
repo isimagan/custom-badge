@@ -318,11 +318,11 @@ _getSecondary(stateObj) {
     const showName = this._getBooleanValue(this._config.show_name, true);
     const showLabel = this._getBooleanValue(this._config.show_label, true);
     
-    const height = this._getStyleValue(this._config.height, "52px");
-    const borderRadius = this._getStyleValue(this._config.border_radius, "26px");
-    const padding = this._getStyleValue(this._config.padding, "0 20px 0 16px");
-    const gap = this._getStyleValue(this._config.gap, "12px");
-    const iconSize = this._getStyleValue(this._config.icon_size, "28px");
+    const height = this._getStyleValue(this._config.height, "48px");
+    const borderRadius = this._getStyleValue(this._config.border_radius, "24px");
+    const padding = this._getStyleValue(this._config.padding, "0 16px 0 14px");
+    const gap = this._getStyleValue(this._config.gap, "10px");
+    const iconSize = this._getStyleValue(this._config.icon_size, "24px");
 
     this.shadowRoot.innerHTML = `
       <style>
@@ -363,7 +363,7 @@ _getSecondary(stateObj) {
         
         .primary {
           color: var(--custom-js-badge-name-color);
-          font-size: 14px;
+          font-size: 13px;
           font-weight: 500;
           line-height: 1.05;
           white-space: nowrap;
@@ -373,7 +373,7 @@ _getSecondary(stateObj) {
         
         .secondary {
           color: var(--custom-js-badge-label-color);
-          font-size: 20px;
+          font-size: 17px;
           font-weight: 700;
           line-height: 1.05;
           white-space: nowrap;
@@ -383,7 +383,7 @@ _getSecondary(stateObj) {
         
         .only-secondary {
           color: var(--custom-js-badge-label-color);
-          font-size: 20px;
+          font-size: 17px;
           font-weight: 700;
           line-height: 1.05;
           white-space: nowrap;
