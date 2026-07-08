@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses semantic versioning where practical.
 
+## v0.4.2
+
+### Fixed
+
+- Fixed `custom:custom-template-badge` rendering without the expected badge background, border, padding and radius.
+- Fixed CSS variable mismatches in `custom-template-badge.js` by using `--custom-template-badge-*` variables consistently.
+- Fixed template badge layout option handling for `height`, `border_radius`, `padding`, `gap` and `icon_size`.
+
+### Changed
+
+- Adjusted default badge sizing to better match Home Assistant's standard badge style on mobile and desktop.
+- Reduced default badge height from 52px to 48px.
+- Reduced default icon size from 28px to 24px.
+- Reduced default label/secondary font size from 20px to 17px.
+- Kept the name/primary line smaller and visually secondary.
 ## v0.4.1
 
 ### Fixed
