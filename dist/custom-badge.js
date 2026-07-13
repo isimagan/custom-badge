@@ -1,3 +1,34 @@
+// src/entity-state.js
+function getStateObject(config, hass) {
+  if (!config?.entity || !hass?.states) {
+    return void 0;
+  }
+  return hass.states[config.entity];
+}
+function formatEntityState(config, hass, stateObject, readValue2) {
+  if (!stateObject) {
+    return readValue2(config.missing_entity_label ?? "");
+  }
+  if (stateObject.state === "unavailable") {
+    return readValue2(config.unavailable_label ?? "Unavailable");
+  }
+  if (stateObject.state === "unknown") {
+    return readValue2(config.unknown_label ?? "Unknown");
+  }
+  if (hass?.formatEntityState) {
+    return hass.formatEntityState(stateObject);
+  }
+  const state = stateObject.state ?? "";
+  const unit = stateObject.attributes?.unit_of_measurement;
+  if (unit) {
+    return `${state} ${unit}`;
+  }
+  if (stateObject.attributes?.device_class === "battery") {
+    return `${state} %`;
+  }
+  return state;
+}
+
 // src/constants.js
 var CUSTOM_BADGE_TYPE = "custom-js-badge";
 var CUSTOM_BADGE_NAME = "Custom Badge";
@@ -15,6 +46,310 @@ var DEFAULT_STYLES = Object.freeze({
   gap: "10px",
   iconSize: "24px"
 });
+
+// src/template.js
+function createTemplateHelpers(states) {
+  return {
+    state: (entityId) => states[entityId]?.state,
+    attr: (entityId, attribute) => states[entityId]?.attributes?.[attribute],
+    hasEntity: (entityId) => Boolean(states[entityId])
+  };
+}
+function evaluateTemplate(value, { config, hass, stateObject }) {
+  if (typeof value !== "string") {
+    return value;
+  }
+  const match = value.match(TEMPLATE_REGEX);
+  if (!match) {
+    return value;
+  }
+  const states = hass?.states ?? {};
+  const helpers = createTemplateHelpers(states);
+  try {
+    return Function(
+      "hass",
+      "entity",
+      "states",
+      "config",
+      "user",
+      "helpers",
+      `"use strict";
+${match[1]}`
+    )(hass, stateObject, states, config, hass?.user, helpers);
+  } catch (error) {
+    console.error("[custom-js-badge] Template error:", error, value);
+    return config?.template_error_label ?? "Template error";
+  }
+}
+
+// src/value-helpers.js
+function readValue(value, context) {
+  return evaluateTemplate(value, context);
+}
+function readStyleValue(value, fallback, context) {
+  if (value === void 0 || value === null || value === "") {
+    return fallback;
+  }
+  return readValue(value, context);
+}
+function readBooleanValue(value, fallback, context) {
+  if (value === void 0 || value === null) {
+    return fallback;
+  }
+  const evaluated = readValue(value, context);
+  if (typeof evaluated === "boolean") {
+    return evaluated;
+  }
+  if (typeof evaluated === "string") {
+    return evaluated.toLowerCase() !== "false";
+  }
+  return Boolean(evaluated);
+}
+function normalizeTextValue(value) {
+  if (value === void 0 || value === null || value === false) {
+    return "";
+  }
+  return String(value);
+}
+function escapeHtml(value) {
+  return normalizeTextValue(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
+}
+
+// src/badge-visibility.js
+function shouldHideBadge(config, stateObject, context) {
+  const entityConfigured = Boolean(config.entity);
+  const entityMissing = entityConfigured && !stateObject;
+  const entityUnavailable = stateObject?.state === "unavailable";
+  const entityUnknown = stateObject?.state === "unknown";
+  const hideIfMissing = readBooleanValue(
+    config.hide_if_missing,
+    false,
+    context
+  );
+  const hideIfUnavailable = readBooleanValue(
+    config.hide_if_unavailable,
+    false,
+    context
+  );
+  const hideIfUnknown = readBooleanValue(
+    config.hide_if_unknown,
+    false,
+    context
+  );
+  return entityMissing && hideIfMissing || entityUnavailable && hideIfUnavailable || entityUnknown && hideIfUnknown;
+}
+
+// src/badge-styles.js
+function getBadgeStyleVariables(config, context) {
+  return {
+    "--custom-js-badge-icon-color": readStyleValue(
+      config.icon_color ?? config.color,
+      DEFAULT_STYLES.iconColor,
+      context
+    ),
+    "--custom-js-badge-background-color": readStyleValue(
+      config.background_color,
+      DEFAULT_STYLES.backgroundColor,
+      context
+    ),
+    "--custom-js-badge-border-color": readStyleValue(
+      config.border_color,
+      DEFAULT_STYLES.borderColor,
+      context
+    ),
+    "--custom-js-badge-name-color": readStyleValue(
+      config.name_color ?? config.primary_color,
+      DEFAULT_STYLES.nameColor,
+      context
+    ),
+    "--custom-js-badge-label-color": readStyleValue(
+      config.label_color ?? config.secondary_color,
+      DEFAULT_STYLES.labelColor,
+      context
+    ),
+    "--custom-js-badge-height": readStyleValue(
+      config.height,
+      DEFAULT_STYLES.height,
+      context
+    ),
+    "--custom-js-badge-border-radius": readStyleValue(
+      config.border_radius,
+      DEFAULT_STYLES.borderRadius,
+      context
+    ),
+    "--custom-js-badge-padding": readStyleValue(
+      config.padding,
+      DEFAULT_STYLES.padding,
+      context
+    ),
+    "--custom-js-badge-gap": readStyleValue(
+      config.gap,
+      DEFAULT_STYLES.gap,
+      context
+    ),
+    "--custom-js-badge-icon-size": readStyleValue(
+      config.icon_size,
+      DEFAULT_STYLES.iconSize,
+      context
+    )
+  };
+}
+function applyBadgeStyles(badge, styleVariables) {
+  for (const [property, value] of Object.entries(styleVariables)) {
+    badge.style.setProperty(property, value);
+  }
+}
+
+// src/badge-model.js
+function createContext(config, hass, stateObject) {
+  return { config, hass, stateObject };
+}
+function getPrimary(config, stateObject, read) {
+  const value = config.primary ?? config.name ?? stateObject?.attributes?.friendly_name ?? config.entity ?? "";
+  return read(value);
+}
+function getSecondary(config, hass, stateObject, read) {
+  const value = config.secondary ?? config.label;
+  if (value !== void 0) {
+    return read(value);
+  }
+  return formatEntityState(config, hass, stateObject, read);
+}
+function getIcon(config, stateObject, read) {
+  const value = config.icon ?? stateObject?.attributes?.icon ?? "";
+  return read(value);
+}
+function createBadgeModel(config, hass) {
+  const stateObject = getStateObject(config, hass);
+  const context = createContext(config, hass, stateObject);
+  const read = (value) => readValue(value, context);
+  if (shouldHideBadge(config, stateObject, context)) {
+    return { hidden: true };
+  }
+  return {
+    hidden: false,
+    stateObject,
+    primary: normalizeTextValue(getPrimary(config, stateObject, read)),
+    secondary: normalizeTextValue(
+      getSecondary(config, hass, stateObject, read)
+    ),
+    icon: normalizeTextValue(getIcon(config, stateObject, read)),
+    showIcon: readBooleanValue(config.show_icon, true, context),
+    showName: readBooleanValue(config.show_name, true, context),
+    showLabel: readBooleanValue(config.show_label, true, context),
+    styleVariables: getBadgeStyleVariables(config, context)
+  };
+}
+
+// src/styles.js
+var BADGE_STYLES = `
+  :host {
+    display: inline-block;
+  }
+
+  .badge {
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--custom-js-badge-gap);
+    min-height: var(--custom-js-badge-height);
+    padding: var(--custom-js-badge-padding);
+    border-radius: var(--custom-js-badge-border-radius);
+    background: var(--custom-js-badge-background-color);
+    color: var(--primary-text-color);
+    border: 1px solid var(--custom-js-badge-border-color);
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  ha-icon,
+  ha-state-icon {
+    --mdc-icon-size: var(--custom-js-badge-icon-size);
+    color: var(--custom-js-badge-icon-color);
+    flex: 0 0 auto;
+  }
+
+  .text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+    line-height: 1.05;
+  }
+
+  .primary {
+    color: var(--custom-js-badge-name-color);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.05;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .secondary,
+  .only-secondary {
+    color: var(--custom-js-badge-label-color);
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.05;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+`;
+
+// src/badge-renderer.js
+function createTextMarkup(model) {
+  const primaryMarkup = model.showName && model.primary ? `<div class="primary">${escapeHtml(model.primary)}</div>` : "";
+  const secondaryClass = model.showName && model.primary ? "secondary" : "only-secondary";
+  const secondaryMarkup = model.showLabel && model.secondary ? `<div class="${secondaryClass}">${escapeHtml(model.secondary)}</div>` : "";
+  return `${primaryMarkup}${secondaryMarkup}`;
+}
+function appendIcon(iconContainer, model, hass) {
+  if (model.icon) {
+    const iconElement = document.createElement("ha-icon");
+    iconElement.setAttribute("icon", model.icon);
+    iconContainer.appendChild(iconElement);
+    return;
+  }
+  if (model.stateObject) {
+    const stateIconElement = document.createElement("ha-state-icon");
+    stateIconElement.hass = hass;
+    stateIconElement.stateObj = model.stateObject;
+    iconContainer.appendChild(stateIconElement);
+    return;
+  }
+  iconContainer.remove();
+}
+function clearBadge(shadowRoot) {
+  shadowRoot.innerHTML = "";
+}
+function renderBadge(shadowRoot, model, hass) {
+  shadowRoot.innerHTML = `
+    <style>${BADGE_STYLES}</style>
+    <div class="badge">
+      <span class="icon-container"></span>
+      <div class="text">${createTextMarkup(model)}</div>
+    </div>
+  `;
+  const badge = shadowRoot.querySelector(".badge");
+  if (!badge) {
+    return void 0;
+  }
+  applyBadgeStyles(badge, model.styleVariables);
+  const iconContainer = shadowRoot.querySelector(".icon-container");
+  if (!iconContainer) {
+    return badge;
+  }
+  if (!model.showIcon) {
+    iconContainer.remove();
+    return badge;
+  }
+  appendIcon(iconContainer, model, hass);
+  return badge;
+}
 
 // src/actions.js
 var ACTION_PROPERTY = Object.freeze({
@@ -140,133 +475,67 @@ async function runConfiguredAction(host, hass, config, action) {
   fireHassAction(host, actionConfig, action);
 }
 
-// src/styles.js
-var BADGE_STYLES = `
-  :host {
-    display: inline-block;
+// src/interactions.js
+var HOLD_DELAY = 500;
+var DOUBLE_TAP_DELAY = 250;
+var BadgeInteractions = class {
+  constructor(host) {
+    this.host = host;
+    this.hass = void 0;
+    this.config = {};
+    this.holdTimer = void 0;
+    this.tapTimer = void 0;
+    this.holdTriggered = false;
   }
-
-  .badge {
-    box-sizing: border-box;
-    display: inline-flex;
-    align-items: center;
-    gap: var(--custom-js-badge-gap);
-    min-height: var(--custom-js-badge-height);
-    padding: var(--custom-js-badge-padding);
-    border-radius: var(--custom-js-badge-border-radius);
-    background: var(--custom-js-badge-background-color);
-    color: var(--primary-text-color);
-    border: 1px solid var(--custom-js-badge-border-color);
-    cursor: pointer;
-    user-select: none;
-    -webkit-tap-highlight-color: transparent;
+  update(hass, config) {
+    this.hass = hass;
+    this.config = config;
   }
-
-  ha-icon,
-  ha-state-icon {
-    --mdc-icon-size: var(--custom-js-badge-icon-size);
-    color: var(--custom-js-badge-icon-color);
-    flex: 0 0 auto;
+  bind(badge) {
+    badge.addEventListener("pointerdown", () => this.onPointerDown());
+    badge.addEventListener("pointerup", () => this.onPointerUp());
+    badge.addEventListener("pointerleave", () => this.onPointerUp());
+    badge.addEventListener("pointercancel", () => this.onPointerUp());
+    badge.addEventListener("click", (event) => this.onClick(event));
+    badge.addEventListener("dblclick", (event) => this.onDoubleClick(event));
   }
-
-  .text {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    min-width: 0;
-    line-height: 1.05;
+  run(action) {
+    void runConfiguredAction(
+      this.host,
+      this.hass,
+      this.config,
+      action
+    ).catch((error) => {
+      console.error(`[custom-js-badge] ${action} action failed:`, error);
+    });
   }
-
-  .primary {
-    color: var(--custom-js-badge-name-color);
-    font-size: 13px;
-    font-weight: 500;
-    line-height: 1.05;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  onPointerDown() {
+    clearTimeout(this.holdTimer);
+    this.holdTriggered = false;
+    this.holdTimer = setTimeout(() => {
+      this.holdTriggered = true;
+      this.run("hold");
+    }, HOLD_DELAY);
   }
-
-  .secondary,
-  .only-secondary {
-    color: var(--custom-js-badge-label-color);
-    font-size: 17px;
-    font-weight: 700;
-    line-height: 1.05;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  onPointerUp() {
+    clearTimeout(this.holdTimer);
   }
-`;
-
-// src/value-helpers.js
-function getStateObject(config, hass) {
-  if (!config?.entity || !hass?.states) {
-    return void 0;
+  onClick(event) {
+    if (this.holdTriggered) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+    clearTimeout(this.tapTimer);
+    this.tapTimer = setTimeout(() => this.run("tap"), DOUBLE_TAP_DELAY);
   }
-  return hass.states[config.entity];
-}
-function createTemplateHelpers(states) {
-  return {
-    state: (entityId) => states[entityId]?.state,
-    attr: (entityId, attribute) => states[entityId]?.attributes?.[attribute],
-    hasEntity: (entityId) => Boolean(states[entityId])
-  };
-}
-function readValue(value, { config, hass, stateObject }) {
-  if (typeof value !== "string") {
-    return value;
+  onDoubleClick(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    clearTimeout(this.tapTimer);
+    this.run("double_tap");
   }
-  const match = value.match(TEMPLATE_REGEX);
-  if (!match) {
-    return value;
-  }
-  const states = hass?.states ?? {};
-  const helpers = createTemplateHelpers(states);
-  try {
-    return Function(
-      "hass",
-      "entity",
-      "states",
-      "config",
-      "user",
-      "helpers",
-      `"use strict";
-${match[1]}`
-    )(hass, stateObject, states, config, hass?.user, helpers);
-  } catch (error) {
-    console.error("[custom-js-badge] Template error:", error, value);
-    return config?.template_error_label ?? "Template error";
-  }
-}
-function readStyleValue(value, fallback, context) {
-  if (value === void 0 || value === null || value === "") {
-    return fallback;
-  }
-  return readValue(value, context);
-}
-function readBooleanValue(value, fallback, context) {
-  if (value === void 0 || value === null) {
-    return fallback;
-  }
-  const evaluated = readValue(value, context);
-  if (typeof evaluated === "boolean") {
-    return evaluated;
-  }
-  if (typeof evaluated === "string") {
-    return evaluated.toLowerCase() !== "false";
-  }
-  return Boolean(evaluated);
-}
-function normalizeTextValue(value) {
-  if (value === void 0 || value === null || value === false) {
-    return "";
-  }
-  return String(value);
-}
-function escapeHtml(value) {
-  return normalizeTextValue(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
-}
+};
 
 // src/custom-js-badge.js
 var CustomJsBadge = class extends HTMLElement {
@@ -275,9 +544,7 @@ var CustomJsBadge = class extends HTMLElement {
     this.attachShadow({ mode: "open" });
     this._config = {};
     this._hass = void 0;
-    this._holdTimer = void 0;
-    this._tapTimer = void 0;
-    this._holdTriggered = false;
+    this._interactions = new BadgeInteractions(this);
   }
   setConfig(config) {
     if (!config || typeof config !== "object") {
@@ -290,277 +557,21 @@ var CustomJsBadge = class extends HTMLElement {
     this._hass = hass;
     this._render();
   }
-  _getStateObject() {
-    return getStateObject(this._config, this._hass);
-  }
-  _getValueContext(stateObject = this._getStateObject()) {
-    return {
-      config: this._config,
-      hass: this._hass,
-      stateObject
-    };
-  }
-  _readValue(value, stateObject) {
-    return readValue(value, this._getValueContext(stateObject));
-  }
-  _readStyleValue(value, fallback, stateObject) {
-    return readStyleValue(
-      value,
-      fallback,
-      this._getValueContext(stateObject)
-    );
-  }
-  _readBooleanValue(value, fallback, stateObject) {
-    return readBooleanValue(
-      value,
-      fallback,
-      this._getValueContext(stateObject)
-    );
-  }
-  _onPointerDown() {
-    clearTimeout(this._holdTimer);
-    this._holdTriggered = false;
-    this._holdTimer = setTimeout(() => {
-      this._holdTriggered = true;
-      void runConfiguredAction(
-        this,
-        this._hass,
-        this._config,
-        "hold"
-      ).catch((error) => {
-        console.error("[custom-js-badge] Hold action failed:", error);
-      });
-    }, 500);
-  }
-  _onPointerUp() {
-    clearTimeout(this._holdTimer);
-  }
-  _onClick(event) {
-    if (this._holdTriggered) {
-      event.preventDefault();
-      event.stopPropagation();
-      return;
-    }
-    clearTimeout(this._tapTimer);
-    this._tapTimer = setTimeout(() => {
-      void runConfiguredAction(
-        this,
-        this._hass,
-        this._config,
-        "tap"
-      ).catch((error) => {
-        console.error("[custom-js-badge] Tap action failed:", error);
-      });
-    }, 250);
-  }
-  _onDoubleClick(event) {
-    event.preventDefault();
-    event.stopPropagation();
-    clearTimeout(this._tapTimer);
-    void runConfiguredAction(
-      this,
-      this._hass,
-      this._config,
-      "double_tap"
-    ).catch((error) => {
-      console.error("[custom-js-badge] Double-tap action failed:", error);
-    });
-  }
-  _getPrimary(stateObject) {
-    const value = this._config.primary ?? this._config.name ?? stateObject?.attributes?.friendly_name ?? this._config.entity ?? "";
-    return this._readValue(value, stateObject);
-  }
-  _formatState(stateObject) {
-    if (!stateObject) {
-      return this._readValue(
-        this._config.missing_entity_label ?? "",
-        stateObject
-      );
-    }
-    if (stateObject.state === "unavailable") {
-      return this._readValue(
-        this._config.unavailable_label ?? "Unavailable",
-        stateObject
-      );
-    }
-    if (stateObject.state === "unknown") {
-      return this._readValue(
-        this._config.unknown_label ?? "Unknown",
-        stateObject
-      );
-    }
-    if (this._hass?.formatEntityState) {
-      return this._hass.formatEntityState(stateObject);
-    }
-    const state = stateObject.state ?? "";
-    const unit = stateObject.attributes?.unit_of_measurement;
-    if (unit) {
-      return `${state} ${unit}`;
-    }
-    if (stateObject.attributes?.device_class === "battery") {
-      return `${state} %`;
-    }
-    return state;
-  }
-  _getSecondary(stateObject) {
-    const value = this._config.secondary ?? this._config.label;
-    if (value !== void 0) {
-      return this._readValue(value, stateObject);
-    }
-    return this._formatState(stateObject);
-  }
-  _getIcon(stateObject) {
-    const value = this._config.icon ?? stateObject?.attributes?.icon ?? "";
-    return this._readValue(value, stateObject);
-  }
-  _setBadgeStyles(badge, values) {
-    for (const [property, value] of Object.entries(values)) {
-      badge.style.setProperty(property, value);
-    }
-  }
-  _appendIcon(iconContainer, icon, stateObject) {
-    if (icon) {
-      const iconElement = document.createElement("ha-icon");
-      iconElement.setAttribute("icon", icon);
-      iconContainer.appendChild(iconElement);
-      return;
-    }
-    if (stateObject) {
-      const stateIconElement = document.createElement("ha-state-icon");
-      stateIconElement.hass = this._hass;
-      stateIconElement.stateObj = stateObject;
-      iconContainer.appendChild(stateIconElement);
-      return;
-    }
-    iconContainer.remove();
-  }
   _render() {
     if (!this.shadowRoot) {
       return;
     }
-    const stateObject = this._getStateObject();
-    const entityConfigured = Boolean(this._config.entity);
-    const entityMissing = entityConfigured && !stateObject;
-    const entityUnavailable = stateObject?.state === "unavailable";
-    const entityUnknown = stateObject?.state === "unknown";
-    const hideIfMissing = this._readBooleanValue(
-      this._config.hide_if_missing,
-      false,
-      stateObject
-    );
-    const hideIfUnavailable = this._readBooleanValue(
-      this._config.hide_if_unavailable,
-      false,
-      stateObject
-    );
-    const hideIfUnknown = this._readBooleanValue(
-      this._config.hide_if_unknown,
-      false,
-      stateObject
-    );
-    if (entityMissing && hideIfMissing || entityUnavailable && hideIfUnavailable || entityUnknown && hideIfUnknown) {
-      this.shadowRoot.innerHTML = "";
+    const model = createBadgeModel(this._config, this._hass);
+    if (model.hidden) {
+      clearBadge(this.shadowRoot);
       return;
     }
-    const primary = normalizeTextValue(this._getPrimary(stateObject));
-    const secondary = normalizeTextValue(this._getSecondary(stateObject));
-    const icon = normalizeTextValue(this._getIcon(stateObject));
-    const showIcon = this._readBooleanValue(
-      this._config.show_icon,
-      true,
-      stateObject
-    );
-    const showName = this._readBooleanValue(
-      this._config.show_name,
-      true,
-      stateObject
-    );
-    const showLabel = this._readBooleanValue(
-      this._config.show_label,
-      true,
-      stateObject
-    );
-    this.shadowRoot.innerHTML = `
-      <style>${BADGE_STYLES}</style>
-      <div class="badge">
-        <span class="icon-container"></span>
-        <div class="text">
-          ${showName && primary ? `<div class="primary">${escapeHtml(primary)}</div>` : ""}
-          ${showLabel && secondary ? `<div class="${showName && primary ? "secondary" : "only-secondary"}">${escapeHtml(secondary)}</div>` : ""}
-        </div>
-      </div>
-    `;
-    const badge = this.shadowRoot.querySelector(".badge");
+    const badge = renderBadge(this.shadowRoot, model, this._hass);
     if (!badge) {
       return;
     }
-    this._setBadgeStyles(badge, {
-      "--custom-js-badge-icon-color": this._readStyleValue(
-        this._config.icon_color ?? this._config.color,
-        DEFAULT_STYLES.iconColor,
-        stateObject
-      ),
-      "--custom-js-badge-background-color": this._readStyleValue(
-        this._config.background_color,
-        DEFAULT_STYLES.backgroundColor,
-        stateObject
-      ),
-      "--custom-js-badge-border-color": this._readStyleValue(
-        this._config.border_color,
-        DEFAULT_STYLES.borderColor,
-        stateObject
-      ),
-      "--custom-js-badge-name-color": this._readStyleValue(
-        this._config.name_color ?? this._config.primary_color,
-        DEFAULT_STYLES.nameColor,
-        stateObject
-      ),
-      "--custom-js-badge-label-color": this._readStyleValue(
-        this._config.label_color ?? this._config.secondary_color,
-        DEFAULT_STYLES.labelColor,
-        stateObject
-      ),
-      "--custom-js-badge-height": this._readStyleValue(
-        this._config.height,
-        DEFAULT_STYLES.height,
-        stateObject
-      ),
-      "--custom-js-badge-border-radius": this._readStyleValue(
-        this._config.border_radius,
-        DEFAULT_STYLES.borderRadius,
-        stateObject
-      ),
-      "--custom-js-badge-padding": this._readStyleValue(
-        this._config.padding,
-        DEFAULT_STYLES.padding,
-        stateObject
-      ),
-      "--custom-js-badge-gap": this._readStyleValue(
-        this._config.gap,
-        DEFAULT_STYLES.gap,
-        stateObject
-      ),
-      "--custom-js-badge-icon-size": this._readStyleValue(
-        this._config.icon_size,
-        DEFAULT_STYLES.iconSize,
-        stateObject
-      )
-    });
-    badge.addEventListener("pointerdown", () => this._onPointerDown());
-    badge.addEventListener("pointerup", () => this._onPointerUp());
-    badge.addEventListener("pointerleave", () => this._onPointerUp());
-    badge.addEventListener("pointercancel", () => this._onPointerUp());
-    badge.addEventListener("click", (event) => this._onClick(event));
-    badge.addEventListener("dblclick", (event) => this._onDoubleClick(event));
-    const iconContainer = this.shadowRoot.querySelector(".icon-container");
-    if (!iconContainer) {
-      return;
-    }
-    if (!showIcon) {
-      iconContainer.remove();
-      return;
-    }
-    this._appendIcon(iconContainer, icon, stateObject);
+    this._interactions.update(this._hass, this._config);
+    this._interactions.bind(badge);
   }
   static getStubConfig() {
     return {

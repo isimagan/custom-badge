@@ -8,6 +8,31 @@ type: custom:custom-js-badge
 
 The project contains one badge type. Source code is split into modules under `src/`, while HACS installs the generated bundle from `dist/custom-badge.js`.
 
+The source is organized by responsibility: badge state/model, visibility, styling, rendering, interactions, actions and template evaluation.
+
+## Project structure
+
+```text
+src/
+├── actions.js
+├── badge-model.js
+├── badge-renderer.js
+├── badge-styles.js
+├── badge-visibility.js
+├── constants.js
+├── custom-js-badge.js
+├── entity-state.js
+├── index.js
+├── interactions.js
+├── register.js
+├── styles.js
+├── template.js
+└── value-helpers.js
+```
+
+`src/custom-js-badge.js` only handles the custom element lifecycle and coordinates the other modules.
+
+
 ## Features
 
 - Optional Home Assistant entity
