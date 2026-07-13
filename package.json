@@ -1,0 +1,14 @@
+{
+  "name": "custom-badge",
+  "version": "0.5.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "esbuild src/index.js --bundle --format=esm --target=es2022 --legal-comments=none --outfile=dist/custom-badge.js",
+    "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true }); require('node:fs').mkdirSync('dist');\"",
+    "watch": "npm run build -- --watch"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.1"
+  }
+}
