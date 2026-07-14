@@ -1,6 +1,6 @@
 export const CUSTOM_BADGE_TYPE = "custom-js-badge";
 export const CUSTOM_BADGE_NAME = "Custom Badge";
-export const CUSTOM_BADGE_VERSION = "0.5.0";
+export const CUSTOM_BADGE_VERSION = "0.6.0";
 
 export const TEMPLATE_REGEX = /^\s*\[\[\[\s*([\s\S]*?)\s*\]\]\]\s*$/;
 
