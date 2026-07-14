@@ -2,6 +2,65 @@
 
 All notable changes to this project are documented in this file.
 
+## v0.6.0
+
+### Added
+
+- Added `primary` and `secondary` as the preferred text options.
+- Added `show_primary` and `show_secondary` for controlling the visibility of each text line.
+- Added `primary_color` and `secondary_color` as the preferred text color options.
+
+### Changed
+
+- Aligned the badge structure and default styling more closely with Home Assistant's standard badge.
+- `primary` now renders as the main `.content` text and defaults to the formatted entity state.
+- `secondary` now renders as the smaller `.label` text and defaults to the entity friendly name.
+- Updated the default badge size, spacing, border, radius, typography and icon size to use Home Assistant theme variables.
+- Entity states are now formatted with `hass.formatEntityState()` when available.
+- Missing entities now use the fixed fallback text `Entity not found`.
+- JavaScript template errors now use the fixed fallback text `Template error` and log the underlying error to the browser console.
+- Kept `label`, `show_label` and `label_color` as aliases for the corresponding primary options.
+- Kept `name`, `show_name` and `name_color` as aliases for the corresponding secondary options.
+- Kept `color` as an alias for `icon_color`.
+
+### Removed
+
+- Removed the configurable layout options `border_color`, `height`, `border_radius`, `padding`, `gap` and `icon_size`.
+- Removed the configurable fallback labels `missing_entity_label`, `unknown_label`, `unavailable_label` and `template_error_label`.
+- Removed the conditional visibility options `hide_if_missing`, `hide_if_unknown` and `hide_if_unavailable`.
+- Removed the obsolete `badge-visibility.js` source module.
+
+### Breaking changes
+
+- The meaning of `primary` and `secondary` has changed to match Home Assistant conventions:
+  - `primary` is now the main content/state line.
+  - `secondary` is now the smaller label/name line.
+- Configurations using removed layout, fallback-label or conditional-visibility options must be updated.
+- Existing configurations using `label` and `name` remain compatible.
+
+### Notes
+
+- The badge type remains `custom:custom-js-badge`.
+- Existing action configurations and JavaScript templates remain supported.
+- HACS continues to install the generated `dist/custom-badge.js` bundle.
+
+## v0.5.1
+
+### Changed
+
+- Completed the modular source split under `src/`.
+- Separated badge state, rendering, styling, interactions, registration, templates and actions into responsibility-specific modules.
+- Reduced `custom-js-badge.js` to the custom element lifecycle and coordination logic.
+- Rebuilt the generated `dist/custom-badge.js` bundle from the modular source.
+
+### Removed
+
+- Cleaned up obsolete generated JavaScript files that were no longer used by HACS.
+
+### Notes
+
+- Existing `custom:custom-js-badge` configurations were not affected.
+
 ## v0.5.0
 
 ### Removed
