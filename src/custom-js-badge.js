@@ -1,5 +1,5 @@
 import { createBadgeModel } from "./badge-model.js";
-import { clearBadge, renderBadge } from "./badge-renderer.js";
+import { renderBadge } from "./badge-renderer.js";
 import { BadgeInteractions } from "./interactions.js";
 
 export class CustomJsBadge extends HTMLElement {
@@ -31,13 +31,8 @@ export class CustomJsBadge extends HTMLElement {
     }
 
     const model = createBadgeModel(this._config, this._hass);
-
-    if (model.hidden) {
-      clearBadge(this.shadowRoot);
-      return;
-    }
-
     const badge = renderBadge(this.shadowRoot, model, this._hass);
+
     if (!badge) {
       return;
     }

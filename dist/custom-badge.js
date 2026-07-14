@@ -5,28 +5,16 @@ function getStateObject(config, hass) {
   }
   return hass.states[config.entity];
 }
-function formatEntityState(config, hass, stateObject, readValue2) {
+function formatEntityState(config, hass, stateObject) {
   if (!stateObject) {
-    return readValue2(config.missing_entity_label ?? "");
-  }
-  if (stateObject.state === "unavailable") {
-    return readValue2(config.unavailable_label ?? "Unavailable");
-  }
-  if (stateObject.state === "unknown") {
-    return readValue2(config.unknown_label ?? "Unknown");
+    return config.entity ? "Entity not found" : "";
   }
   if (hass?.formatEntityState) {
     return hass.formatEntityState(stateObject);
   }
   const state = stateObject.state ?? "";
   const unit = stateObject.attributes?.unit_of_measurement;
-  if (unit) {
-    return `${state} ${unit}`;
-  }
-  if (stateObject.attributes?.device_class === "battery") {
-    return `${state} %`;
-  }
-  return state;
+  return unit ? `${state} ${unit}` : state;
 }
 
 // src/constants.js
@@ -36,15 +24,9 @@ var CUSTOM_BADGE_VERSION = "0.5.0";
 var TEMPLATE_REGEX = /^\s*\[\[\[\s*([\s\S]*?)\s*\]\]\]\s*$/;
 var DEFAULT_STYLES = Object.freeze({
   iconColor: "var(--state-icon-color)",
-  backgroundColor: "var(--ha-card-background, var(--card-background-color))",
-  borderColor: "var(--divider-color)",
-  nameColor: "var(--secondary-text-color)",
-  labelColor: "var(--primary-text-color)",
-  height: "48px",
-  borderRadius: "24px",
-  padding: "0 16px 0 14px",
-  gap: "10px",
-  iconSize: "24px"
+  backgroundColor: "var(--ha-card-background, var(--card-background-color, white))",
+  primaryColor: "var(--primary-text-color)",
+  secondaryColor: "var(--secondary-text-color)"
 });
 
 // src/template.js
@@ -78,7 +60,7 @@ ${match[1]}`
     )(hass, stateObject, states, config, hass?.user, helpers);
   } catch (error) {
     console.error("[custom-js-badge] Template error:", error, value);
-    return config?.template_error_label ?? "Template error";
+    return "Template error";
   }
 }
 
@@ -115,30 +97,6 @@ function escapeHtml(value) {
   return normalizeTextValue(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
 }
 
-// src/badge-visibility.js
-function shouldHideBadge(config, stateObject, context) {
-  const entityConfigured = Boolean(config.entity);
-  const entityMissing = entityConfigured && !stateObject;
-  const entityUnavailable = stateObject?.state === "unavailable";
-  const entityUnknown = stateObject?.state === "unknown";
-  const hideIfMissing = readBooleanValue(
-    config.hide_if_missing,
-    false,
-    context
-  );
-  const hideIfUnavailable = readBooleanValue(
-    config.hide_if_unavailable,
-    false,
-    context
-  );
-  const hideIfUnknown = readBooleanValue(
-    config.hide_if_unknown,
-    false,
-    context
-  );
-  return entityMissing && hideIfMissing || entityUnavailable && hideIfUnavailable || entityUnknown && hideIfUnknown;
-}
-
 // src/badge-styles.js
 function getBadgeStyleVariables(config, context) {
   return {
@@ -152,44 +110,14 @@ function getBadgeStyleVariables(config, context) {
       DEFAULT_STYLES.backgroundColor,
       context
     ),
-    "--custom-js-badge-border-color": readStyleValue(
-      config.border_color,
-      DEFAULT_STYLES.borderColor,
+    "--custom-js-badge-primary-color": readStyleValue(
+      config.primary_color ?? config.label_color,
+      DEFAULT_STYLES.primaryColor,
       context
     ),
-    "--custom-js-badge-name-color": readStyleValue(
-      config.name_color ?? config.primary_color,
-      DEFAULT_STYLES.nameColor,
-      context
-    ),
-    "--custom-js-badge-label-color": readStyleValue(
-      config.label_color ?? config.secondary_color,
-      DEFAULT_STYLES.labelColor,
-      context
-    ),
-    "--custom-js-badge-height": readStyleValue(
-      config.height,
-      DEFAULT_STYLES.height,
-      context
-    ),
-    "--custom-js-badge-border-radius": readStyleValue(
-      config.border_radius,
-      DEFAULT_STYLES.borderRadius,
-      context
-    ),
-    "--custom-js-badge-padding": readStyleValue(
-      config.padding,
-      DEFAULT_STYLES.padding,
-      context
-    ),
-    "--custom-js-badge-gap": readStyleValue(
-      config.gap,
-      DEFAULT_STYLES.gap,
-      context
-    ),
-    "--custom-js-badge-icon-size": readStyleValue(
-      config.icon_size,
-      DEFAULT_STYLES.iconSize,
+    "--custom-js-badge-secondary-color": readStyleValue(
+      config.secondary_color ?? config.name_color,
+      DEFAULT_STYLES.secondaryColor,
       context
     )
   };
@@ -204,16 +132,16 @@ function applyBadgeStyles(badge, styleVariables) {
 function createContext(config, hass, stateObject) {
   return { config, hass, stateObject };
 }
-function getPrimary(config, stateObject, read) {
-  const value = config.primary ?? config.name ?? stateObject?.attributes?.friendly_name ?? config.entity ?? "";
-  return read(value);
-}
-function getSecondary(config, hass, stateObject, read) {
-  const value = config.secondary ?? config.label;
+function getPrimary(config, hass, stateObject, read) {
+  const value = config.primary ?? config.label;
   if (value !== void 0) {
     return read(value);
   }
-  return formatEntityState(config, hass, stateObject, read);
+  return formatEntityState(config, hass, stateObject);
+}
+function getSecondary(config, stateObject, read) {
+  const value = config.secondary ?? config.name ?? stateObject?.attributes?.friendly_name ?? config.entity ?? "";
+  return read(value);
 }
 function getIcon(config, stateObject, read) {
   const value = config.icon ?? stateObject?.attributes?.icon ?? "";
@@ -223,20 +151,24 @@ function createBadgeModel(config, hass) {
   const stateObject = getStateObject(config, hass);
   const context = createContext(config, hass, stateObject);
   const read = (value) => readValue(value, context);
-  if (shouldHideBadge(config, stateObject, context)) {
-    return { hidden: true };
-  }
   return {
-    hidden: false,
     stateObject,
-    primary: normalizeTextValue(getPrimary(config, stateObject, read)),
-    secondary: normalizeTextValue(
-      getSecondary(config, hass, stateObject, read)
+    primary: normalizeTextValue(
+      getPrimary(config, hass, stateObject, read)
     ),
+    secondary: normalizeTextValue(getSecondary(config, stateObject, read)),
     icon: normalizeTextValue(getIcon(config, stateObject, read)),
     showIcon: readBooleanValue(config.show_icon, true, context),
-    showName: readBooleanValue(config.show_name, true, context),
-    showLabel: readBooleanValue(config.show_label, true, context),
+    showPrimary: readBooleanValue(
+      config.show_primary ?? config.show_label,
+      true,
+      context
+    ),
+    showSecondary: readBooleanValue(
+      config.show_secondary ?? config.show_name,
+      true,
+      context
+    ),
     styleVariables: getBadgeStyleVariables(config, context)
   };
 }
@@ -244,68 +176,107 @@ function createBadgeModel(config, hass) {
 // src/styles.js
 var BADGE_STYLES = `
   :host {
-    display: inline-block;
+    display: inline-flex;
+    vertical-align: middle;
   }
 
   .badge {
-    box-sizing: border-box;
-    display: inline-flex;
+    --badge-color: var(--custom-js-badge-icon-color);
+    --ha-ripple-color: var(--badge-color);
+    --ha-ripple-hover-opacity: 0.04;
+    --ha-ripple-pressed-opacity: 0.12;
+    justify-content: center;
     align-items: center;
-    gap: var(--custom-js-badge-gap);
-    min-height: var(--custom-js-badge-height);
-    padding: var(--custom-js-badge-padding);
-    border-radius: var(--custom-js-badge-border-radius);
+    gap: var(--ha-space-2);
+    height: var(--ha-badge-size, 36px);
+    min-width: var(--ha-badge-size, 36px);
+    box-sizing: border-box;
+    border-radius: var(
+      --ha-badge-border-radius,
+      calc(var(--ha-badge-size, 36px) / 2)
+    );
     background: var(--custom-js-badge-background-color);
-    color: var(--primary-text-color);
-    border: 1px solid var(--custom-js-badge-border-color);
+    width: auto;
+    backdrop-filter: var(--ha-card-backdrop-filter, none);
+    border-width: var(--ha-card-border-width, 1px);
+    box-shadow: var(--ha-card-box-shadow, none);
+    border-style: solid;
+    border-color: var(
+      --ha-card-border-color,
+      var(--divider-color, #e0e0e0)
+    );
+    flex-direction: row;
+    padding: 0 12px;
+    transition:
+      box-shadow 0.18s ease-in-out,
+      border-color 0.18s ease-in-out;
+    display: flex;
+    position: relative;
     cursor: pointer;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
   }
 
+  .info {
+    text-align: center;
+    flex-direction: column;
+    align-items: flex-start;
+    padding-inline-start: initial;
+    display: flex;
+    min-width: 0;
+  }
+
+  .label {
+    font-size: var(--ha-font-size-xs);
+    font-style: normal;
+    font-weight: var(--ha-font-weight-medium);
+    letter-spacing: 0.1px;
+    color: var(--custom-js-badge-secondary-color);
+    line-height: 10px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .content {
+    font-size: var(--ha-badge-font-size, var(--ha-font-size-s));
+    font-style: normal;
+    font-weight: var(--ha-font-weight-medium);
+    line-height: var(--ha-line-height-condensed);
+    letter-spacing: 0.1px;
+    color: var(--custom-js-badge-primary-color);
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .icon {
+    display: flex;
+    align-items: center;
+    flex: 0 0 auto;
+    margin-left: -4px;
+    margin-right: 0;
+    margin-inline: -4px 0;
+    line-height: 0;
+  }
+
   ha-icon,
   ha-state-icon {
-    --mdc-icon-size: var(--custom-js-badge-icon-size);
-    color: var(--custom-js-badge-icon-color);
-    flex: 0 0 auto;
-  }
-
-  .text {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    min-width: 0;
-    line-height: 1.05;
-  }
-
-  .primary {
-    color: var(--custom-js-badge-name-color);
-    font-size: 13px;
-    font-weight: 500;
-    line-height: 1.05;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .secondary,
-  .only-secondary {
-    color: var(--custom-js-badge-label-color);
-    font-size: 17px;
-    font-weight: 700;
-    line-height: 1.05;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    --mdc-icon-size: var(--ha-badge-icon-size, 18px);
+    color: var(--badge-color);
   }
 `;
 
 // src/badge-renderer.js
 function createTextMarkup(model) {
-  const primaryMarkup = model.showName && model.primary ? `<div class="primary">${escapeHtml(model.primary)}</div>` : "";
-  const secondaryClass = model.showName && model.primary ? "secondary" : "only-secondary";
-  const secondaryMarkup = model.showLabel && model.secondary ? `<div class="${secondaryClass}">${escapeHtml(model.secondary)}</div>` : "";
-  return `${primaryMarkup}${secondaryMarkup}`;
+  const secondaryMarkup = model.showSecondary && model.secondary ? `<span class="label">${escapeHtml(model.secondary)}</span>` : "";
+  const primaryMarkup = model.showPrimary && model.primary ? `<span class="content">${escapeHtml(model.primary)}</span>` : "";
+  if (!secondaryMarkup && !primaryMarkup) {
+    return "";
+  }
+  return `<span class="info">${secondaryMarkup}${primaryMarkup}</span>`;
 }
 function appendIcon(iconContainer, model, hass) {
   if (model.icon) {
@@ -323,15 +294,12 @@ function appendIcon(iconContainer, model, hass) {
   }
   iconContainer.remove();
 }
-function clearBadge(shadowRoot) {
-  shadowRoot.innerHTML = "";
-}
 function renderBadge(shadowRoot, model, hass) {
   shadowRoot.innerHTML = `
     <style>${BADGE_STYLES}</style>
     <div class="badge">
-      <span class="icon-container"></span>
-      <div class="text">${createTextMarkup(model)}</div>
+      <span class="icon"></span>
+      ${createTextMarkup(model)}
     </div>
   `;
   const badge = shadowRoot.querySelector(".badge");
@@ -339,7 +307,7 @@ function renderBadge(shadowRoot, model, hass) {
     return void 0;
   }
   applyBadgeStyles(badge, model.styleVariables);
-  const iconContainer = shadowRoot.querySelector(".icon-container");
+  const iconContainer = shadowRoot.querySelector(".icon");
   if (!iconContainer) {
     return badge;
   }
@@ -562,10 +530,6 @@ var CustomJsBadge = class extends HTMLElement {
       return;
     }
     const model = createBadgeModel(this._config, this._hass);
-    if (model.hidden) {
-      clearBadge(this.shadowRoot);
-      return;
-    }
     const badge = renderBadge(this.shadowRoot, model, this._hass);
     if (!badge) {
       return;

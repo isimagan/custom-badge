@@ -6,17 +6,9 @@ export function getStateObject(config, hass) {
   return hass.states[config.entity];
 }
 
-export function formatEntityState(config, hass, stateObject, readValue) {
+export function formatEntityState(config, hass, stateObject) {
   if (!stateObject) {
-    return readValue(config.missing_entity_label ?? "");
-  }
-
-  if (stateObject.state === "unavailable") {
-    return readValue(config.unavailable_label ?? "Unavailable");
-  }
-
-  if (stateObject.state === "unknown") {
-    return readValue(config.unknown_label ?? "Unknown");
+    return config.entity ? "Entity not found" : "";
   }
 
   if (hass?.formatEntityState) {
@@ -26,13 +18,5 @@ export function formatEntityState(config, hass, stateObject, readValue) {
   const state = stateObject.state ?? "";
   const unit = stateObject.attributes?.unit_of_measurement;
 
-  if (unit) {
-    return `${state} ${unit}`;
-  }
-
-  if (stateObject.attributes?.device_class === "battery") {
-    return `${state} %`;
-  }
-
-  return state;
+  return unit ? `${state} ${unit}` : state;
 }

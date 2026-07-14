@@ -6,13 +6,8 @@ export const TEMPLATE_REGEX = /^\s*\[\[\[\s*([\s\S]*?)\s*\]\]\]\s*$/;
 
 export const DEFAULT_STYLES = Object.freeze({
   iconColor: "var(--state-icon-color)",
-  backgroundColor: "var(--ha-card-background, var(--card-background-color))",
-  borderColor: "var(--divider-color)",
-  nameColor: "var(--secondary-text-color)",
-  labelColor: "var(--primary-text-color)",
-  height: "48px",
-  borderRadius: "24px",
-  padding: "0 16px 0 14px",
-  gap: "10px",
-  iconSize: "24px",
+  backgroundColor:
+    "var(--ha-card-background, var(--card-background-color, white))",
+  primaryColor: "var(--primary-text-color)",
+  secondaryColor: "var(--secondary-text-color)",
 });

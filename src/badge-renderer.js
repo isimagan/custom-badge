@@ -3,19 +3,21 @@ import { BADGE_STYLES } from "./styles.js";
 import { escapeHtml } from "./value-helpers.js";
 
 function createTextMarkup(model) {
-  const primaryMarkup =
-    model.showName && model.primary
-      ? `<div class="primary">${escapeHtml(model.primary)}</div>`
-      : "";
-
-  const secondaryClass =
-    model.showName && model.primary ? "secondary" : "only-secondary";
   const secondaryMarkup =
-    model.showLabel && model.secondary
-      ? `<div class="${secondaryClass}">${escapeHtml(model.secondary)}</div>`
+    model.showSecondary && model.secondary
+      ? `<span class="label">${escapeHtml(model.secondary)}</span>`
       : "";
 
-  return `${primaryMarkup}${secondaryMarkup}`;
+  const primaryMarkup =
+    model.showPrimary && model.primary
+      ? `<span class="content">${escapeHtml(model.primary)}</span>`
+      : "";
+
+  if (!secondaryMarkup && !primaryMarkup) {
+    return "";
+  }
+
+  return `<span class="info">${secondaryMarkup}${primaryMarkup}</span>`;
 }
 
 function appendIcon(iconContainer, model, hass) {
@@ -37,16 +39,12 @@ function appendIcon(iconContainer, model, hass) {
   iconContainer.remove();
 }
 
-export function clearBadge(shadowRoot) {
-  shadowRoot.innerHTML = "";
-}
-
 export function renderBadge(shadowRoot, model, hass) {
   shadowRoot.innerHTML = `
     <style>${BADGE_STYLES}</style>
     <div class="badge">
-      <span class="icon-container"></span>
-      <div class="text">${createTextMarkup(model)}</div>
+      <span class="icon"></span>
+      ${createTextMarkup(model)}
     </div>
   `;
 
@@ -57,7 +55,7 @@ export function renderBadge(shadowRoot, model, hass) {
 
   applyBadgeStyles(badge, model.styleVariables);
 
-  const iconContainer = shadowRoot.querySelector(".icon-container");
+  const iconContainer = shadowRoot.querySelector(".icon");
   if (!iconContainer) {
     return badge;
   }

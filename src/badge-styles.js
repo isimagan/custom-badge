@@ -13,44 +13,14 @@ export function getBadgeStyleVariables(config, context) {
       DEFAULT_STYLES.backgroundColor,
       context,
     ),
-    "--custom-js-badge-border-color": readStyleValue(
-      config.border_color,
-      DEFAULT_STYLES.borderColor,
+    "--custom-js-badge-primary-color": readStyleValue(
+      config.primary_color ?? config.label_color,
+      DEFAULT_STYLES.primaryColor,
       context,
     ),
-    "--custom-js-badge-name-color": readStyleValue(
-      config.name_color ?? config.primary_color,
-      DEFAULT_STYLES.nameColor,
-      context,
-    ),
-    "--custom-js-badge-label-color": readStyleValue(
-      config.label_color ?? config.secondary_color,
-      DEFAULT_STYLES.labelColor,
-      context,
-    ),
-    "--custom-js-badge-height": readStyleValue(
-      config.height,
-      DEFAULT_STYLES.height,
-      context,
-    ),
-    "--custom-js-badge-border-radius": readStyleValue(
-      config.border_radius,
-      DEFAULT_STYLES.borderRadius,
-      context,
-    ),
-    "--custom-js-badge-padding": readStyleValue(
-      config.padding,
-      DEFAULT_STYLES.padding,
-      context,
-    ),
-    "--custom-js-badge-gap": readStyleValue(
-      config.gap,
-      DEFAULT_STYLES.gap,
-      context,
-    ),
-    "--custom-js-badge-icon-size": readStyleValue(
-      config.icon_size,
-      DEFAULT_STYLES.iconSize,
+    "--custom-js-badge-secondary-color": readStyleValue(
+      config.secondary_color ?? config.name_color,
+      DEFAULT_STYLES.secondaryColor,
       context,
     ),
   };

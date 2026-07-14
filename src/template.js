@@ -33,6 +33,6 @@ export function evaluateTemplate(value, { config, hass, stateObject }) {
     )(hass, stateObject, states, config, hass?.user, helpers);
   } catch (error) {
     console.error("[custom-js-badge] Template error:", error, value);
-    return config?.template_error_label ?? "Template error";
+    return "Template error";
   }
 }
