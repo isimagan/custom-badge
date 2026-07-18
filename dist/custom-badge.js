@@ -17,10 +17,15 @@ function formatEntityState(config, hass, stateObject) {
   return unit ? `${state} ${unit}` : state;
 }
 
+// version.json
+var version_default = {
+  version: "0.6.0"
+};
+
 // src/constants.js
 var CUSTOM_BADGE_TYPE = "custom-js-badge";
 var CUSTOM_BADGE_NAME = "Custom Badge";
-var CUSTOM_BADGE_VERSION = "0.5.0";
+var CUSTOM_BADGE_VERSION = version_default.version;
 var TEMPLATE_REGEX = /^\s*\[\[\[\s*([\s\S]*?)\s*\]\]\]\s*$/;
 var DEFAULT_STYLES = Object.freeze({
   iconColor: "var(--state-icon-color)",
